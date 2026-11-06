@@ -1,6 +1,7 @@
 # SafeVault --- Secure File Management System
 
-**Live application:** https://safevault-efou.onrender.com\
+**Live application:** https://safevault-efou.onrender.com 
+
 **GitHub repository:** https://github.com/iwilltell/SafeVault
 
 SafeVault is an educational secure file management system built with
