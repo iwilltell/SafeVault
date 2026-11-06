@@ -14,7 +14,7 @@ permissions, basic threat detection, and security activity logging.
 > and uploaded files may be lost when the service restarts or redeploys.
 > Use dummy accounts and non-sensitive test files only.
 
-## Features
+## Features_
 
 -   **Authentication:** Registration, login, Argon2 password hashing,
     sessions, and logout.
