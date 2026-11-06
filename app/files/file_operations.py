@@ -17,7 +17,16 @@ from flask import (
 from werkzeug.utils import secure_filename
 
 from app.database.db import execute_query, fetch_one, fetch_all
-from app.files.encryption import encrypt_file, decrypt_file, EncryptionError
+from app.files.encryption import (
+    encrypt_file,
+    decrypt_file,
+    EncryptionError,
+)
+from app.files.permissions import (
+    get_file_permission,
+    can_write_file,
+    is_file_owner,
+)
 
 
 files_bp = Blueprint("files", __name__, url_prefix="/files")
@@ -41,8 +50,9 @@ def get_current_user_id():
 
 def get_file_access(file_id, user_id):
     """
-    Return a file only if the user owns it or has shared access.
+    Return a file if the user owns it or has shared access.
     """
+
     return fetch_one(
         """
         SELECT f.*
@@ -63,16 +73,64 @@ def get_file_access(file_id, user_id):
     )
 
 
+def get_storage_file(stored_name):
+    """
+    Resolve a stored filename inside the configured storage directory.
+    """
+
+    storage_path = Path(
+        current_app.config["STORAGE_PATH"]
+    ).resolve()
+
+    if Path(stored_name).name != stored_name:
+        return None
+
+    file_path = (storage_path / stored_name).resolve()
+
+    if file_path.parent != storage_path:
+        return None
+
+    return file_path
+
+
+def read_original_content(file_record):
+    """
+    Read and decrypt a stored file, then verify its integrity.
+    """
+
+    file_path = get_storage_file(file_record["stored_name"])
+
+    if file_path is None:
+        raise OSError("Invalid stored filename")
+
+    if not file_path.is_file():
+        raise FileNotFoundError("Stored file does not exist")
+
+    stored_content = file_path.read_bytes()
+
+    if file_record["is_encrypted"]:
+        original_content = decrypt_file(stored_content)
+    else:
+        original_content = stored_content
+
+    actual_hash = hashlib.sha256(
+        original_content
+    ).hexdigest()
+
+    if actual_hash != file_record["sha256_hash"]:
+        raise ValueError("File integrity verification failed")
+
+    return original_content
+
+
 @files_bp.post("/upload")
 def upload_file():
 
-    # 1. Verify authentication.
     user_id = get_current_user_id()
 
     if not user_id:
         return jsonify({"error": "Authentication required"}), 401
 
-    # 2. Check uploaded file.
     uploaded_file = request.files.get("file")
 
     if uploaded_file is None:
@@ -81,19 +139,16 @@ def upload_file():
     if not uploaded_file.filename:
         return jsonify({"error": "Filename is required"}), 400
 
-    # 3. Sanitize filename.
     original_name = secure_filename(uploaded_file.filename)
 
     if not original_name:
         return jsonify({"error": "Invalid filename"}), 400
 
-    # 4. Validate extension.
     extension = Path(original_name).suffix.lower()
 
     if extension not in ALLOWED_EXTENSIONS:
         return jsonify({"error": "File type not allowed"}), 400
 
-    # 5. Read and validate size.
     max_size = current_app.config["MAX_CONTENT_LENGTH"]
     file_content = uploaded_file.stream.read(max_size + 1)
 
@@ -103,17 +158,14 @@ def upload_file():
     if len(file_content) > max_size:
         return jsonify({"error": "File is too large"}), 413
 
-    # 6. Calculate hash of original content.
     sha256_hash = hashlib.sha256(file_content).hexdigest()
 
-    # 7. Encrypt before storing.
     try:
         encrypted_content = encrypt_file(file_content)
     except EncryptionError:
         current_app.logger.exception("File encryption failed")
         return jsonify({"error": "File encryption failed"}), 500
 
-    # 8. Generate unique storage filename.
     stored_name = f"{uuid.uuid4().hex}{extension}"
 
     storage_path = Path(current_app.config["STORAGE_PATH"])
@@ -121,11 +173,9 @@ def upload_file():
 
     destination = storage_path / stored_name
 
-    # 9. Determine MIME type.
     mime_type = mimetypes.guess_type(original_name)[0]
     mime_type = mime_type or "application/octet-stream"
 
-    # 10. Save encrypted content and metadata.
     try:
         with destination.open("xb") as file:
             file.write(encrypted_content)
@@ -155,11 +205,7 @@ def upload_file():
         )
 
         saved_file = fetch_one(
-            """
-            SELECT id
-            FROM files
-            WHERE stored_name = ?
-            """,
+            "SELECT id FROM files WHERE stored_name = ?",
             (stored_name,),
         )
 
@@ -185,13 +231,11 @@ def upload_file():
 @files_bp.get("")
 def list_files():
 
-    # 1. Verify authentication.
     user_id = get_current_user_id()
 
     if not user_id:
         return jsonify({"error": "Authentication required"}), 401
 
-    # 2. Retrieve owned and shared files.
     files = fetch_all(
         """
         SELECT
@@ -227,65 +271,19 @@ def list_files():
 @files_bp.get("/<int:file_id>/download")
 def download_file(file_id):
 
-    # 1. Verify authentication.
     user_id = get_current_user_id()
 
     if not user_id:
         return jsonify({"error": "Authentication required"}), 401
 
-    # 2. Verify ownership or shared access.
     file_record = get_file_access(file_id, user_id)
 
     if file_record is None:
-        # Same response for nonexistent and inaccessible files.
         return jsonify({"error": "File not found"}), 404
 
-    # 3. Resolve the storage location safely.
-    storage_path = Path(
-        current_app.config["STORAGE_PATH"]
-    ).resolve()
-
-    stored_name = file_record["stored_name"]
-
-    # Stored filenames are generated by SafeVault.
-    if Path(stored_name).name != stored_name:
-        current_app.logger.error("Invalid stored filename in database")
-        return jsonify({"error": "Invalid stored file"}), 500
-
-    file_path = (storage_path / stored_name).resolve()
-
-    if file_path.parent != storage_path:
-        return jsonify({"error": "Invalid stored file"}), 500
-
-    # 4. Check that the physical file exists.
-    if not file_path.is_file():
-        return jsonify({"error": "Stored file is missing"}), 404
-
     try:
-        stored_content = file_path.read_bytes()
+        original_content = read_original_content(file_record)
 
-        # 5. Decrypt if encryption is enabled.
-        if file_record["is_encrypted"]:
-            original_content = decrypt_file(stored_content)
-        else:
-            original_content = stored_content
-
-        # 6. Verify original content integrity.
-        actual_hash = hashlib.sha256(
-            original_content
-        ).hexdigest()
-
-        if actual_hash != file_record["sha256_hash"]:
-            current_app.logger.error(
-                "File integrity verification failed for file ID %s",
-                file_id,
-            )
-
-            return jsonify({
-                "error": "File integrity verification failed"
-            }), 409
-
-        # 7. Return the original file.
         return send_file(
             BytesIO(original_content),
             mimetype=file_record["mime_type"],
@@ -298,17 +296,337 @@ def download_file(file_id):
             "File decryption failed for file ID %s",
             file_id,
         )
+        return jsonify({"error": "Unable to decrypt file"}), 500
 
+    except ValueError:
         return jsonify({
-            "error": "Unable to decrypt file"
-        }), 500
+            "error": "File integrity verification failed"
+        }), 409
+
+    except FileNotFoundError:
+        return jsonify({"error": "Stored file is missing"}), 404
 
     except OSError:
         current_app.logger.exception(
             "File read failed for file ID %s",
             file_id,
         )
+        return jsonify({"error": "Unable to read stored file"}), 500
+
+
+@files_bp.post("/<int:file_id>/share")
+def share_file(file_id):
+
+    user_id = get_current_user_id()
+
+    if not user_id:
+        return jsonify({"error": "Authentication required"}), 401
+
+    if not is_file_owner(file_id, user_id):
+        return jsonify({"error": "Only the file owner can share it"}), 403
+
+    data = request.get_json(silent=True) or {}
+
+    target_username = data.get("username")
+    permission = data.get("permission")
+
+    if not isinstance(target_username, str) or not target_username.strip():
+        return jsonify({"error": "A target username is required"}), 400
+
+    target_username = target_username.strip()
+
+    if permission not in ("read", "write"):
+        return jsonify({"error": "Permission must be read or write"}), 400
+
+    target_user = fetch_one(
+        "SELECT id FROM users WHERE username = ?",
+        (target_username,),
+    )
+
+    if target_user is None:
+        return jsonify({"error": "Target user not found"}), 404
+
+    target_user_id = target_user["id"]
+
+    if target_user_id == user_id:
+        return jsonify({"error": "You already own this file"}), 400
+
+    try:
+        existing_share = fetch_one(
+            """
+            SELECT id
+            FROM shares
+            WHERE file_id = ? AND user_id = ?
+            """,
+            (file_id, target_user_id),
+        )
+
+        if existing_share:
+            execute_query(
+                """
+                UPDATE shares
+                SET permission = ?, shared_by_id = ?
+                WHERE file_id = ? AND user_id = ?
+                """,
+                (
+                    permission,
+                    user_id,
+                    file_id,
+                    target_user_id,
+                ),
+            )
+            message = "Existing sharing permission updated"
+        else:
+            execute_query(
+                """
+                INSERT INTO shares (
+                    file_id,
+                    user_id,
+                    shared_by_id,
+                    permission
+                )
+                VALUES (?, ?, ?, ?)
+                """,
+                (
+                    file_id,
+                    target_user_id,
+                    user_id,
+                    permission,
+                ),
+            )
+            message = "File shared successfully"
 
         return jsonify({
-            "error": "Unable to read stored file"
-        }), 500
+            "message": message,
+            "file_id": file_id,
+            "username": target_username,
+            "permission": permission,
+        }), 200
+
+    except Exception:
+        current_app.logger.exception("File sharing failed")
+        return jsonify({"error": "Unable to share file"}), 500
+
+
+@files_bp.get("/<int:file_id>/shares")
+def list_shares(file_id):
+
+    user_id = get_current_user_id()
+
+    if not user_id:
+        return jsonify({"error": "Authentication required"}), 401
+
+    if not is_file_owner(file_id, user_id):
+        return jsonify({"error": "Only the file owner can view shares"}), 403
+
+    shares = fetch_all(
+        """
+        SELECT
+            s.user_id,
+            u.username,
+            u.email,
+            s.permission,
+            s.created_at
+        FROM shares AS s
+        JOIN users AS u ON u.id = s.user_id
+        WHERE s.file_id = ?
+        ORDER BY s.created_at DESC
+        """,
+        (file_id,),
+    )
+
+    return jsonify({
+        "file_id": file_id,
+        "shares": [dict(share) for share in shares],
+        "count": len(shares),
+    }), 200
+
+
+@files_bp.put("/<int:file_id>/share/<int:target_user_id>")
+def update_share_permission(file_id, target_user_id):
+
+    user_id = get_current_user_id()
+
+    if not user_id:
+        return jsonify({"error": "Authentication required"}), 401
+
+    if not is_file_owner(file_id, user_id):
+        return jsonify({"error": "Only the file owner can change permissions"}), 403
+
+    data = request.get_json(silent=True) or {}
+    permission = data.get("permission")
+
+    if permission not in ("read", "write"):
+        return jsonify({"error": "Permission must be read or write"}), 400
+
+    existing_share = fetch_one(
+        """
+        SELECT id
+        FROM shares
+        WHERE file_id = ? AND user_id = ?
+        """,
+        (file_id, target_user_id),
+    )
+
+    if existing_share is None:
+        return jsonify({"error": "Share not found"}), 404
+
+    execute_query(
+        """
+        UPDATE shares
+        SET permission = ?, shared_by_id = ?
+        WHERE file_id = ? AND user_id = ?
+        """,
+        (
+            permission,
+            user_id,
+            file_id,
+            target_user_id,
+        ),
+    )
+
+    return jsonify({
+        "message": "Sharing permission updated",
+        "file_id": file_id,
+        "user_id": target_user_id,
+        "permission": permission,
+    }), 200
+
+
+@files_bp.delete("/<int:file_id>/share/<int:target_user_id>")
+def revoke_share(file_id, target_user_id):
+
+    user_id = get_current_user_id()
+
+    if not user_id:
+        return jsonify({"error": "Authentication required"}), 401
+
+    if not is_file_owner(file_id, user_id):
+        return jsonify({"error": "Only the file owner can revoke access"}), 403
+
+    existing_share = fetch_one(
+        """
+        SELECT id
+        FROM shares
+        WHERE file_id = ? AND user_id = ?
+        """,
+        (file_id, target_user_id),
+    )
+
+    if existing_share is None:
+        return jsonify({"error": "Share not found"}), 404
+
+    execute_query(
+        """
+        DELETE FROM shares
+        WHERE file_id = ? AND user_id = ?
+        """,
+        (file_id, target_user_id),
+    )
+
+    return jsonify({
+        "message": "File access revoked successfully",
+        "file_id": file_id,
+        "user_id": target_user_id,
+    }), 200
+
+
+@files_bp.put("/<int:file_id>/edit")
+def edit_file(file_id):
+
+    user_id = get_current_user_id()
+
+    if not user_id:
+        return jsonify({"error": "Authentication required"}), 401
+
+    if not can_write_file(file_id, user_id):
+        return jsonify({"error": "Write permission required"}), 403
+
+    file_record = fetch_one(
+        "SELECT * FROM files WHERE id = ?",
+        (file_id,),
+    )
+
+    if file_record is None:
+        return jsonify({"error": "File not found"}), 404
+
+    uploaded_file = request.files.get("file")
+
+    if uploaded_file is None:
+        return jsonify({"error": "No replacement file provided"}), 400
+
+    if not uploaded_file.filename:
+        return jsonify({"error": "Filename is required"}), 400
+
+    new_content = uploaded_file.stream.read(
+        current_app.config["MAX_CONTENT_LENGTH"] + 1
+    )
+
+    if not new_content:
+        return jsonify({"error": "Empty files are not allowed"}), 400
+
+    if len(new_content) > current_app.config["MAX_CONTENT_LENGTH"]:
+        return jsonify({"error": "File is too large"}), 413
+
+    try:
+        # Validate the existing file before replacing it.
+        old_content = read_original_content(file_record)
+
+        if file_record["is_encrypted"]:
+            new_stored_content = encrypt_file(new_content)
+        else:
+            new_stored_content = new_content
+
+        file_path = get_storage_file(file_record["stored_name"])
+
+        if file_path is None:
+            return jsonify({"error": "Invalid stored file"}), 500
+
+        # Replace the file on disk.
+        file_path.write_bytes(new_stored_content)
+
+        new_hash = hashlib.sha256(new_content).hexdigest()
+
+        try:
+            execute_query(
+                """
+                UPDATE files
+                SET file_size = ?,
+                    sha256_hash = ?,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = ?
+                """,
+                (len(new_content), new_hash, file_id),
+            )
+
+        except Exception:
+            # Restore original contents if the metadata update fails.
+            if file_record["is_encrypted"]:
+                file_path.write_bytes(encrypt_file(old_content))
+            else:
+                file_path.write_bytes(old_content)
+
+            raise
+
+        return jsonify({
+            "message": "File updated successfully",
+            "file_id": file_id,
+            "file_size": len(new_content),
+            "sha256_hash": new_hash,
+        }), 200
+
+    except EncryptionError:
+        current_app.logger.exception("File encryption/decryption failed")
+        return jsonify({"error": "Unable to process file encryption"}), 500
+
+    except ValueError:
+        return jsonify({
+            "error": "Existing file integrity verification failed"
+        }), 409
+
+    except FileNotFoundError:
+        return jsonify({"error": "Stored file is missing"}), 404
+
+    except OSError:
+        current_app.logger.exception("File editing failed")
+        return jsonify({"error": "Unable to update file"}), 500
