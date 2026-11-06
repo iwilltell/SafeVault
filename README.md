@@ -1,127 +1,230 @@
-## 🌐 Live Demo
+# SafeVault --- Secure File Management System
 
-**SafeVault is deployed on Render!**
+**Live application:** https://safevault-efou.onrender.com\
+**GitHub repository:** https://github.com/iwilltell/SafeVault
 
-🔗 **Live Application:** https://safevault-efou.onrender.com
+SafeVault is an educational secure file management system built with
+Python and Flask. It demonstrates user authentication, two-factor
+authentication, encrypted file storage, file sharing, access
+permissions, basic threat detection, and security activity logging.
 
-The application is hosted using Render's free web service.
+> **Important:** SafeVault is an academic prototype, not a
+> production-grade security or antivirus product. The free Render
+> deployment uses temporary local storage. Accounts, database records,
+> and uploaded files may be lost when the service restarts or redeploys.
+> Use dummy accounts and non-sensitive test files only.
 
-> **Demo limitations:** The free Render service uses an ephemeral filesystem. User accounts, SQLite data and uploaded files may be lost after restarts or redeployments. Use dummy accounts and test files only.
+## Features
 
-# SafeVault — Secure File Management System
+-   **Authentication:** Registration, login, Argon2 password hashing,
+    sessions, and logout.
+-   **Two-factor authentication:** QR-code setup, TOTP verification, and
+    enable/disable controls.
+-   **File management:** Upload, download, Fernet encryption, SHA-256
+    integrity verification, and metadata.
+-   **File sharing:** Read/write permissions, permission updates, and
+    access revocation.
+-   **Threat detection:** Filename and extension validation,
+    suspicious-input checks, basic path-traversal/injection pattern
+    detection, EICAR test-signature detection, and basic executable
+    identification.
+-   **Audit logging:** Records important account, file, and security
+    events.
 
-**Course:** CSE316 — Operating Systems  
-**Implementation:** Python 3.13, Flask, SQLite  
-**Project mode:** Solo, PC-only local web application
+Threat detection is heuristic and educational. It is not a replacement
+for professional antivirus software and does not guarantee that files
+are safe.
 
-## Project purpose
+## Technology stack
 
-SafeVault is an educational secure file-management application. The intended features are:
+  Area                        Technology
+  --------------------------- -------------------------
+  Backend                     Python, Flask
+  Database                    SQLite
+  Frontend                    HTML, CSS, JavaScript
+  Password hashing            Argon2
+  File encryption             Fernet (`cryptography`)
+  Integrity checking          SHA-256
+  Two-factor authentication   PyOTP
+  QR-code generation          qrcode, Pillow
+  Testing                     Pytest
+  Production server           Gunicorn
+  Hosting                     Render
 
-- Password-based registration and login
-- Optional two-factor authentication (TOTP)
-- Encrypted file storage
-- User/owner-based access control and controlled sharing
-- File operations: upload, download, read, write and metadata viewing
-- Basic educational threat checks and security-event logging
+## Project structure
 
-> This repository is a learning scaffold, not a finished security product. Implement and understand each feature yourself. The CSE316 assignment brief says students must code the project themselves and warns that submitting copied or AI-generated code can result in zero marks. Use this scaffold to organize your work, then write, test, explain and document your own implementation.
+``` text
+SafeVault/
+├── app/
+│   ├── auth/
+│   ├── audit/
+│   ├── database/
+│   ├── files/
+│   ├── security/
+│   ├── services/
+│   ├── static/
+│   │   ├── css/
+│   │   └── js/
+│   ├── templates/
+│   ├── config.py
+│   └── __init__.py
+├── tests/
+├── instance/
+├── requirements.txt
+└── run.py
+```
 
-## Three project modules
+## Run locally
 
-1. **Authentication and User Security** — registration, password hashing, 2FA and session handling.
-2. **Secure File Management** — file operations, encryption, metadata, permissions and sharing.
-3. **Threat Detection and Monitoring** — input/file validation, educational threat checks and audit events.
+### Prerequisites
 
-## Suggested development sequence
+-   Python 3.13 or a compatible Python version
+-   Git
 
-1. Environment and project structure
-2. SQLite schema and database access
-3. Password hashing and registration
-4. Login, sessions and logout
-5. TOTP two-factor authentication
-6. File upload/download and safe storage paths
-7. Encryption/decryption
-8. Ownership, permissions and sharing
-9. Metadata and audit logging
-10. Educational threat checks
-11. Glassmorphism PC dashboard
-12. Tests, integration, report and presentation
+### 1. Clone the repository
 
-## Setup (Windows PowerShell)
+``` bash
+git clone https://github.com/iwilltell/SafeVault.git
+cd SafeVault
+```
 
-```powershell
-py -3.13 -m venv venv
-.env\Scripts\Activate.ps1
-python -m pip install --upgrade pip
+### 2. Create and activate a virtual environment
+
+Windows PowerShell:
+
+``` powershell
+python -m venv venv
+venv\Scripts\activate
+```
+
+### 3. Install dependencies
+
+``` powershell
 pip install -r requirements.txt
-Copy-Item .env.example .env
+```
+
+### 4. Configure environment variables
+
+Create a `.env` file in the project root. Generate a Fernet key:
+
+``` powershell
+python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+```
+
+Generate a Flask secret:
+
+``` powershell
+python -c "import secrets; print(secrets.token_urlsafe(48))"
+```
+
+Example `.env`:
+
+``` env
+FLASK_SECRET_KEY=replace_with_a_generated_secret
+SAFEVAULT_ENCRYPTION_KEY=replace_with_your_generated_fernet_key
+DATABASE_PATH=instance/safevault.sqlite3
+STORAGE_PATH=instance/uploads
+MAX_CONTENT_LENGTH_MB=10
+SESSION_COOKIE_SECURE=false
+```
+
+Keep `.env` private. Never commit it or publish the secret values. Back
+up the encryption key securely: files encrypted with a key cannot be
+decrypted if that key is lost.
+
+### 5. Start the application
+
+``` powershell
 python run.py
 ```
 
-If PowerShell blocks activation, use:
+Open http://127.0.0.1:5000 in your browser.
 
-```powershell
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-.env\Scripts\Activate.ps1
+## Run tests
+
+``` powershell
+python -m pytest
 ```
 
-Open the local address printed by Flask in your PC browser.
+The project reached **99 passing tests** in the development environment.
+Run the command against the current checkout to verify its present
+state.
 
-## Git workflow required by the assignment
+## Render deployment
 
-Maintain **at least 7 meaningful revisions**, use clear commit messages, develop features on branches, test them, and merge into `main`.
+**Live application:** https://safevault-efou.onrender.com
 
-Example:
+Render service configuration:
 
-```bash
-git init
-git add .
-git commit -m "chore: create SafeVault project scaffold"
-git branch -M main
+  Setting         Value
+  --------------- -----------------------------------
+  Runtime         Python
+  Branch          `main`
+  Build command   `pip install -r requirements.txt`
+  Start command   `gunicorn run:app`
 
-git switch -c feature/database
-# implement and test your database work
-git add .
-git commit -m "feat: add initial SQLite schema"
-git switch main
-git merge --no-ff feature/database
+Configure these environment variables in the Render dashboard. Do not
+put secret values in this README or in Git:
+
+``` text
+FLASK_SECRET_KEY=<your generated Flask secret>
+SAFEVAULT_ENCRYPTION_KEY=<your generated Fernet key>
+DATABASE_PATH=/tmp/safevault.sqlite3
+STORAGE_PATH=/tmp/safevault_uploads
+SESSION_COOKIE_SECURE=true
 ```
 
-Repeat with separate branches such as `feature/auth`, `feature/two-factor`, `feature/file-encryption`, `feature/access-control`, `feature/threat-checks`, and `feature/dashboard`. Do not create empty commits just to reach seven revisions; each revision should represent real, tested progress.
+### Free-tier storage limitation
 
-## Security boundaries
+The free Render web service has an ephemeral filesystem. SQLite data and
+locally stored encrypted uploads can disappear after restarts,
+redeployments, or instance replacement. This deployment is intended for
+demonstration. Do not use it for confidential or important files.
 
-- This is a local educational prototype, not production-ready cloud storage.
-- Never store plaintext passwords. Use a vetted password-hashing library.
-- Do not invent your own cryptographic algorithm.
-- Keep secrets out of Git; `.env` is ignored.
-- Treat uploaded files as untrusted. Validate names, sizes and paths; never execute uploaded files.
-- The threat-check module is a demonstration, not a substitute for antivirus/EDR.
-- Python input validation can demonstrate safe bounds checks, but it cannot claim to detect every native memory buffer overflow.
-- Use synthetic test files and harmless test signatures only.
+For durable use, migrate to a persistent database and external object
+storage, and configure backups and access controls.
 
-## LPU report checklist
+## Demo account
 
-The uploaded CSE316 brief specifies these report sections:
+There is no guaranteed pre-created demo account. To try the application,
+open the live URL and register an account using an email address you
+control.
 
-1. Project Overview
-2. Module-Wise Breakdown
-3. Functionalities
-4. Technology Used (programming languages, libraries/tools, other tools)
-5. Flow Diagram
-6. Revision Tracking on GitHub (repository name and link)
-7. Conclusion and Future Scope
-8. References
+If a dedicated shared demo account is created later, its credentials can
+be added here. Do not publish credentials for a personal account. A
+public shared account should contain only disposable test data.
 
-Appendix:
+## Development workflow
 
-- A. AI-generated project elaboration/breakdown report
-- B. Problem statement
-- C. Complete project code
+The project uses Git and GitHub for version control. Feature branches
+are used for development, and tested changes are merged into `main`.
 
-The brief also requires a group project of at most 3 students, one integrated project, individual UMS submission, a presentation, documentation, and GitHub revision tracking. Follow your faculty's latest instructions and deadline.
+``` bash
+git switch -c feature/your-feature
+# Make and test your changes
+git add .
+git commit -m "feat: describe your change"
+git push origin feature/your-feature
+```
 
-## Current status
+## Future improvements
 
-This is the initial scaffold. Features are intentionally marked TODO and will be implemented incrementally with tests and commits.
+-   Persistent database and cloud file storage
+-   File version history
+-   More comprehensive security scanning
+-   Improved activity analytics
+-   Further UI and accessibility improvements
+
+## Academic project
+
+**Project:** SafeVault --- Secure File Management System\
+**Course:** CSE316 --- Operating Systems\
+**Purpose:** Educational demonstration of file management,
+authentication, access control, encryption, integrity checking, and
+security monitoring.
+
+## Disclaimer
+
+SafeVault is an educational prototype. It has not been independently
+security-audited and should not be used to store confidential,
+regulated, or irreplaceable information.
