@@ -227,4 +227,7 @@ security monitoring.
 
 SafeVault is an educational prototype. It has not been independently
 security-audited and should not be used to store confidential,
-regulated, or irreplaceable information.
+regulated, or irreplaceable information. 
+
+I hope you like our project.
+
