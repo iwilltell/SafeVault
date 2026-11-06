@@ -1,10 +1,8 @@
-
 import os
 from pathlib import Path
 
 
 class Config:
-
     SECRET_KEY = os.getenv(
         "FLASK_SECRET_KEY",
         "development-only-change-me"
@@ -30,3 +28,8 @@ class Config:
     )
 
     PERMANENT_SESSION_LIFETIME = 1800
+
+    STORAGE_PATH = os.getenv(
+        "STORAGE_PATH",
+        str(Path("instance") / "uploads")
+    )
