@@ -1,0 +1,106 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SafeVault | Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+</head>
+<body>
+
+<div class="layout">
+
+    <aside class="sidebar">
+        <div class="brand">
+            <div class="brand-icon">S</div>
+            <span>SafeVault</span>
+        </div>
+
+        <p class="nav-label">WORKSPACE</p>
+
+        <a class="nav-item active" href="/dashboard">⌂ &nbsp; Overview</a>
+        <a class="nav-item" href="/files">▤ &nbsp; My Files</a>
+
+        <p class="nav-label">SECURITY</p>
+
+        <a class="nav-item" href="/audit">◈ &nbsp; Activity Logs</a>
+
+        <div class="sidebar-bottom">
+            <div class="security-status">
+                <span class="status-dot"></span>
+                System active
+            </div>
+            <button id="logoutButton" class="logout-button">↪ &nbsp; Sign out</button>
+        </div>
+    </aside>
+
+    <main class="main-content">
+
+        <header class="topbar">
+            <div>
+                <p class="eyebrow">YOUR WORKSPACE</p>
+                <h1>Dashboard</h1>
+            </div>
+            <div class="profile">
+                <div class="avatar">S</div>
+                <span id="username">User</span>
+            </div>
+        </header>
+
+        <section class="welcome-card">
+            <div>
+                <p class="eyebrow">SAFEVAULT WORKSPACE</p>
+                <h2>Your files, secured.</h2>
+                <p>Manage your files and keep your digital workspace protected.</p>
+            </div>
+            <div class="welcome-symbol">◆</div>
+        </section>
+
+        <section class="section-heading">
+            <div>
+                <h2>Workspace overview</h2>
+                <p>Your secure file management tools.</p>
+            </div>
+        </section>
+
+        <section class="cards">
+
+            <a href="/files" class="dashboard-card">
+                <div class="card-icon purple">▤</div>
+                <h3>My Files</h3>
+                <p>Upload, download and manage your encrypted files.</p>
+                <span class="card-link">Open files →</span>
+            </a>
+
+            <a href="/files" class="dashboard-card">
+                <div class="card-icon blue">⇄</div>
+                <h3>File Sharing</h3>
+                <p>Manage file access and sharing permissions.</p>
+                <span class="card-link">Manage files →</span>
+            </a>
+
+            <a href="/audit" class="dashboard-card">
+                <div class="card-icon green">◈</div>
+                <h3>Activity Logs</h3>
+                <p>Review recorded account and file activities.</p>
+                <span class="card-link">View activity →</span>
+            </a>
+
+            <a href="/auth/2fa/setup" class="dashboard-card" onclick="return false;">
+                <div class="card-icon orange">♙</div>
+                <h3>Account Security</h3>
+                <p>Protect your account with two-factor authentication.</p>
+                <span class="card-link">2FA settings →</span>
+            </a>
+
+        </section>
+
+        <footer>© 2026 SafeVault · Secure file management</footer>
+
+    </main>
+</div>
+
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+</html>
