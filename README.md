@@ -1,3 +1,13 @@
+## 🌐 Live Demo
+
+**SafeVault is deployed on Render!**
+
+🔗 **Live Application:** https://safevault-efou.onrender.com
+
+The application is hosted using Render's free web service.
+
+> **Demo limitations:** The free Render service uses an ephemeral filesystem. User accounts, SQLite data and uploaded files may be lost after restarts or redeployments. Use dummy accounts and test files only.
+
 # SafeVault — Secure File Management System
 
 **Course:** CSE316 — Operating Systems  
@@ -5,7 +15,9 @@
 **Project mode:** Solo, PC-only local web application
 
 ## Project purpose
+
 SafeVault is an educational secure file-management application. The intended features are:
+
 - Password-based registration and login
 - Optional two-factor authentication (TOTP)
 - Encrypted file storage
@@ -16,11 +28,13 @@ SafeVault is an educational secure file-management application. The intended fea
 > This repository is a learning scaffold, not a finished security product. Implement and understand each feature yourself. The CSE316 assignment brief says students must code the project themselves and warns that submitting copied or AI-generated code can result in zero marks. Use this scaffold to organize your work, then write, test, explain and document your own implementation.
 
 ## Three project modules
+
 1. **Authentication and User Security** — registration, password hashing, 2FA and session handling.
 2. **Secure File Management** — file operations, encryption, metadata, permissions and sharing.
 3. **Threat Detection and Monitoring** — input/file validation, educational threat checks and audit events.
 
 ## Suggested development sequence
+
 1. Environment and project structure
 2. SQLite schema and database access
 3. Password hashing and registration
@@ -35,6 +49,7 @@ SafeVault is an educational secure file-management application. The intended fea
 12. Tests, integration, report and presentation
 
 ## Setup (Windows PowerShell)
+
 ```powershell
 py -3.13 -m venv venv
 .env\Scripts\Activate.ps1
@@ -45,6 +60,7 @@ python run.py
 ```
 
 If PowerShell blocks activation, use:
+
 ```powershell
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 .env\Scripts\Activate.ps1
@@ -53,9 +69,11 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 Open the local address printed by Flask in your PC browser.
 
 ## Git workflow required by the assignment
+
 Maintain **at least 7 meaningful revisions**, use clear commit messages, develop features on branches, test them, and merge into `main`.
 
 Example:
+
 ```bash
 git init
 git add .
@@ -73,6 +91,7 @@ git merge --no-ff feature/database
 Repeat with separate branches such as `feature/auth`, `feature/two-factor`, `feature/file-encryption`, `feature/access-control`, `feature/threat-checks`, and `feature/dashboard`. Do not create empty commits just to reach seven revisions; each revision should represent real, tested progress.
 
 ## Security boundaries
+
 - This is a local educational prototype, not production-ready cloud storage.
 - Never store plaintext passwords. Use a vetted password-hashing library.
 - Do not invent your own cryptographic algorithm.
@@ -83,7 +102,9 @@ Repeat with separate branches such as `feature/auth`, `feature/two-factor`, `fea
 - Use synthetic test files and harmless test signatures only.
 
 ## LPU report checklist
+
 The uploaded CSE316 brief specifies these report sections:
+
 1. Project Overview
 2. Module-Wise Breakdown
 3. Functionalities
@@ -94,6 +115,7 @@ The uploaded CSE316 brief specifies these report sections:
 8. References
 
 Appendix:
+
 - A. AI-generated project elaboration/breakdown report
 - B. Problem statement
 - C. Complete project code
@@ -101,4 +123,5 @@ Appendix:
 The brief also requires a group project of at most 3 students, one integrated project, individual UMS submission, a presentation, documentation, and GitHub revision tracking. Follow your faculty's latest instructions and deadline.
 
 ## Current status
+
 This is the initial scaffold. Features are intentionally marked TODO and will be implemented incrementally with tests and commits.
