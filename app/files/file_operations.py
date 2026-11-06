@@ -1,3 +1,4 @@
+
 import hashlib
 import mimetypes
 import uuid
@@ -265,6 +266,43 @@ def list_files():
     return jsonify({
         "files": [dict(file) for file in files],
         "count": len(files),
+    }), 200
+
+
+# FEATURE 5: FILE METADATA
+
+@files_bp.get("/<int:file_id>/metadata")
+def get_file_metadata(file_id):
+    """
+    Return file metadata to the owner or a user with shared access.
+    """
+
+    user_id = get_current_user_id()
+
+    if not user_id:
+        return jsonify({
+            "error": "Authentication required"
+        }), 401
+
+    file_record = get_file_access(file_id, user_id)
+
+    if file_record is None:
+        return jsonify({
+            "error": "File not found"
+        }), 404
+
+    permission = get_file_permission(file_id, user_id)
+
+    return jsonify({
+        "file_id": file_record["id"],
+        "original_name": file_record["original_name"],
+        "file_size": file_record["file_size"],
+        "mime_type": file_record["mime_type"],
+        "sha256_hash": file_record["sha256_hash"],
+        "is_encrypted": bool(file_record["is_encrypted"]),
+        "created_at": file_record["created_at"],
+        "updated_at": file_record["updated_at"],
+        "access_type": permission,
     }), 200
 
 

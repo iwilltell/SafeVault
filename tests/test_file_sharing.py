@@ -332,3 +332,83 @@ def test_non_owner_cannot_revoke_share(sharing_setup):
     )
 
     assert response.status_code == 403
+
+def test_metadata_requires_login(sharing_setup):
+    setup = sharing_setup
+
+    setup["client"].post("/auth/logout")
+
+    response = setup["client"].get(
+        f"/files/{setup['file_id']}/metadata"
+    )
+
+    assert response.status_code == 401
+
+
+def test_owner_can_view_file_metadata(sharing_setup):
+    setup = sharing_setup
+
+    response = setup["client"].get(
+        f"/files/{setup['file_id']}/metadata"
+    )
+
+    assert response.status_code == 200
+
+    data = response.get_json()
+
+    assert data["file_id"] == setup["file_id"]
+    assert data["original_name"] == "document.txt"
+    assert data["access_type"] == "owner"
+    assert data["is_encrypted"] is True
+    assert data["file_size"] > 0
+    assert data["sha256_hash"]
+
+
+def test_reader_can_view_file_metadata(sharing_setup):
+    setup = sharing_setup
+
+    share_with(setup, "reader", "read")
+    login_as(setup, "reader")
+
+    response = setup["client"].get(
+        f"/files/{setup['file_id']}/metadata"
+    )
+
+    assert response.status_code == 200
+    assert response.get_json()["access_type"] == "read"
+
+
+def test_writer_can_view_file_metadata(sharing_setup):
+    setup = sharing_setup
+
+    share_with(setup, "writer", "write")
+    login_as(setup, "writer")
+
+    response = setup["client"].get(
+        f"/files/{setup['file_id']}/metadata"
+    )
+
+    assert response.status_code == 200
+    assert response.get_json()["access_type"] == "write"
+
+
+def test_stranger_cannot_view_file_metadata(sharing_setup):
+    setup = sharing_setup
+
+    login_as(setup, "stranger")
+
+    response = setup["client"].get(
+        f"/files/{setup['file_id']}/metadata"
+    )
+
+    assert response.status_code == 404
+
+
+def test_nonexistent_file_metadata_returns_404(sharing_setup):
+    setup = sharing_setup
+
+    response = setup["client"].get(
+        "/files/999999/metadata"
+    )
+
+    assert response.status_code == 404
