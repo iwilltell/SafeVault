@@ -6,7 +6,6 @@ from flask import Blueprint, request, jsonify, session
 from app.database.db import (
     execute_query,
     fetch_one,
-    fetch_all,
 )
 
 from app.auth.password import (
@@ -14,6 +13,8 @@ from app.auth.password import (
     verify_password,
     needs_rehash,
 )
+
+from app.services.audit_logger import record_event
 
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
@@ -55,22 +56,6 @@ def validate_registration(username, email, password):
         return "Password must contain 12-128 characters."
 
     return None
-
-
-def record_event(user_id, event_type, details):
-    """Record an authentication security event."""
-
-    execute_query(
-        """
-        INSERT INTO audit_events (
-            user_id,
-            event_type,
-            details
-        )
-        VALUES (?, ?, ?)
-        """,
-        (user_id, event_type, details)
-    )
 
 
 @auth_bp.post("/register")
