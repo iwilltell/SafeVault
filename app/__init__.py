@@ -13,8 +13,10 @@ def create_app():
     initialize_database()
 
     from app.auth.authentication import auth_bp
+    from app.auth.two_factor import two_factor_bp
 
     app.register_blueprint(auth_bp)
+    app.register_blueprint(two_factor_bp)
 
     @app.get("/")
     def index():
