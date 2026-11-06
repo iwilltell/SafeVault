@@ -2,7 +2,7 @@
 from app import create_app
 
 
-def test_home_route_returns_safevault_status():
+def test_home_route_returns_login_page():
     app = create_app()
     app.config["TESTING"] = True
 
@@ -11,6 +11,20 @@ def test_home_route_returns_safevault_status():
     response = client.get("/")
 
     assert response.status_code == 200
-    assert response.json["application"] == "SafeVault"
-    assert response.json["status"] == "running"
-    assert response.json["database"] == "initialized"
+    assert b"SafeVault" in response.data
+    assert b"loginForm" in response.data
+
+
+def test_home_route_redirects_authenticated_user():
+    app = create_app()
+    app.config["TESTING"] = True
+
+    client = app.test_client()
+
+    with client.session_transaction() as session:
+        session["user_id"] = 1
+
+    response = client.get("/")
+
+    assert response.status_code == 302
+    assert response.headers["Location"].endswith("/dashboard")
