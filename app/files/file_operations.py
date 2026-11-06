@@ -15,6 +15,7 @@ from flask import (
 from werkzeug.utils import secure_filename
 
 from app.database.db import execute_query, fetch_one
+from app.files.encryption import encrypt_file, EncryptionError
 
 
 files_bp = Blueprint("files", __name__, url_prefix="/files")
@@ -35,7 +36,7 @@ ALLOWED_EXTENSIONS = {
 @files_bp.post("/upload")
 def upload_file():
 
-    # 1. Verify user authentication.
+    # 1. Verify authentication.
     user_id = session.get("user_id")
 
     if not user_id:
@@ -43,7 +44,7 @@ def upload_file():
             "error": "Authentication required"
         }), 401
 
-    # 2. Check whether a file was provided.
+    # 2. Check the uploaded file.
     uploaded_file = request.files.get("file")
 
     if uploaded_file is None:
@@ -56,7 +57,7 @@ def upload_file():
             "error": "Filename is required"
         }), 400
 
-    # 3. Sanitize the original filename.
+    # 3. Sanitize filename.
     original_name = secure_filename(uploaded_file.filename)
 
     if not original_name:
@@ -64,7 +65,7 @@ def upload_file():
             "error": "Invalid filename"
         }), 400
 
-    # 4. Validate the file extension.
+    # 4. Validate extension.
     extension = Path(original_name).suffix.lower()
 
     if extension not in ALLOWED_EXTENSIONS:
@@ -72,9 +73,8 @@ def upload_file():
             "error": "File type not allowed"
         }), 400
 
-    # 5. Read and validate file size.
+    # 5. Read and validate size.
     max_size = current_app.config["MAX_CONTENT_LENGTH"]
-
     file_content = uploaded_file.stream.read(max_size + 1)
 
     if not file_content:
@@ -87,7 +87,19 @@ def upload_file():
             "error": "File is too large"
         }), 413
 
-    # 6. Generate a unique storage filename.
+    # 6. Calculate hash of the ORIGINAL file.
+    sha256_hash = hashlib.sha256(file_content).hexdigest()
+
+    # 7. Encrypt file before storing it.
+    try:
+        encrypted_content = encrypt_file(file_content)
+    except EncryptionError:
+        current_app.logger.exception("File encryption failed")
+        return jsonify({
+            "error": "File encryption failed"
+        }), 500
+
+    # 8. Generate unique storage name.
     stored_name = f"{uuid.uuid4().hex}{extension}"
 
     storage_path = Path(current_app.config["STORAGE_PATH"])
@@ -95,19 +107,16 @@ def upload_file():
 
     destination = storage_path / stored_name
 
-    # 7. Calculate SHA-256 integrity hash.
-    sha256_hash = hashlib.sha256(file_content).hexdigest()
-
-    # 8. Identify MIME type.
+    # 9. Determine MIME type.
     mime_type = mimetypes.guess_type(original_name)[0]
 
     if mime_type is None:
         mime_type = "application/octet-stream"
 
-    # 9. Save file and database metadata.
+    # 10. Save encrypted file and metadata.
     try:
         with destination.open("xb") as file:
-            file.write(file_content)
+            file.write(encrypted_content)
 
         execute_query(
             """
@@ -129,7 +138,7 @@ def upload_file():
                 len(file_content),
                 mime_type,
                 sha256_hash,
-                0,
+                1,
             ),
         )
 
@@ -143,23 +152,21 @@ def upload_file():
         )
 
         return jsonify({
-            "message": "File uploaded successfully",
+            "message": "File uploaded and encrypted successfully",
             "file_id": saved_file["id"],
             "original_name": original_name,
             "stored_name": stored_name,
             "file_size": len(file_content),
+            "encrypted_size": len(encrypted_content),
             "mime_type": mime_type,
             "sha256_hash": sha256_hash,
-            "is_encrypted": False,
+            "is_encrypted": True,
         }), 201
 
     except Exception:
-        # Remove the physical file if database storage fails.
         destination.unlink(missing_ok=True)
 
-        current_app.logger.exception(
-            "File upload failed"
-        )
+        current_app.logger.exception("Encrypted file upload failed")
 
         return jsonify({
             "error": "File upload failed"

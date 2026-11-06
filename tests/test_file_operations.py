@@ -4,42 +4,46 @@ import sqlite3
 
 import pytest
 
+from cryptography.fernet import Fernet
+
 from app import create_app
 from app.config import Config
+from app.files.encryption import decrypt_file
 
 
 @pytest.fixture
 def client(tmp_path, monkeypatch):
-
     database_path = tmp_path / "test_safevault.db"
     storage_path = tmp_path / "uploads"
+
+    encryption_key = Fernet.generate_key().decode("utf-8")
 
     monkeypatch.setattr(
         Config,
         "DATABASE_PATH",
-        str(database_path)
+        str(database_path),
     )
 
     monkeypatch.setattr(
         Config,
         "STORAGE_PATH",
-        str(storage_path)
+        str(storage_path),
+    )
+
+    monkeypatch.setattr(
+        Config,
+        "ENCRYPTION_KEY",
+        encryption_key,
     )
 
     app = create_app()
-
     app.config["TESTING"] = True
     app.config["SECRET_KEY"] = "test-secret-key"
 
-    return (
-        app.test_client(),
-        database_path,
-        storage_path
-    )
+    return app.test_client(), database_path, storage_path, app
 
 
 def register_and_login(client):
-
     client.post(
         "/auth/register",
         json={
@@ -59,16 +63,12 @@ def register_and_login(client):
 
 
 def test_upload_requires_login(client):
-
-    test_client, _, _ = client
+    test_client, _, _, _ = client
 
     response = test_client.post(
         "/files/upload",
         data={
-            "file": (
-                io.BytesIO(b"hello"),
-                "notes.txt"
-            )
+            "file": (io.BytesIO(b"hello"), "notes.txt")
         },
         content_type="multipart/form-data",
     )
@@ -77,9 +77,7 @@ def test_upload_requires_login(client):
 
 
 def test_upload_requires_file(client):
-
-    test_client, _, _ = client
-
+    test_client, _, _, _ = client
     register_and_login(test_client)
 
     response = test_client.post(
@@ -92,18 +90,13 @@ def test_upload_requires_file(client):
 
 
 def test_upload_rejects_unsupported_extension(client):
-
-    test_client, _, _ = client
-
+    test_client, _, _, _ = client
     register_and_login(test_client)
 
     response = test_client.post(
         "/files/upload",
         data={
-            "file": (
-                io.BytesIO(b"print('hello')"),
-                "script.exe"
-            )
+            "file": (io.BytesIO(b"test"), "script.exe")
         },
         content_type="multipart/form-data",
     )
@@ -111,21 +104,17 @@ def test_upload_rejects_unsupported_extension(client):
     assert response.status_code == 400
 
 
-def test_successful_upload_saves_file_and_metadata(client):
-
-    test_client, database_path, storage_path = client
-
+def test_successful_upload_stores_encrypted_file_and_metadata(client):
+    test_client, database_path, storage_path, app = client
     register_and_login(test_client)
 
-    file_content = b"SafeVault test document"
+    file_content = b"SafeVault confidential test document"
+    expected_hash = hashlib.sha256(file_content).hexdigest()
 
     response = test_client.post(
         "/files/upload",
         data={
-            "file": (
-                io.BytesIO(file_content),
-                "notes.txt"
-            )
+            "file": (io.BytesIO(file_content), "notes.txt")
         },
         content_type="multipart/form-data",
     )
@@ -134,21 +123,27 @@ def test_successful_upload_saves_file_and_metadata(client):
 
     response_data = response.get_json()
 
-    expected_hash = hashlib.sha256(
-        file_content
-    ).hexdigest()
-
     assert response_data["original_name"] == "notes.txt"
     assert response_data["file_size"] == len(file_content)
     assert response_data["sha256_hash"] == expected_hash
+    assert response_data["is_encrypted"] is True
 
     stored_files = list(storage_path.iterdir())
 
     assert len(stored_files) == 1
-    assert stored_files[0].read_bytes() == file_content
+
+    encrypted_content = stored_files[0].read_bytes()
+
+    # The bytes on disk must not be the original plaintext.
+    assert encrypted_content != file_content
+
+    # Verify that the encrypted content can be decrypted.
+    with app.app_context():
+        decrypted_content = decrypt_file(encrypted_content)
+
+    assert decrypted_content == file_content
 
     connection = sqlite3.connect(database_path)
-
     connection.row_factory = sqlite3.Row
 
     row = connection.execute(
@@ -165,22 +160,17 @@ def test_successful_upload_saves_file_and_metadata(client):
     assert row is not None
     assert row["file_size"] == len(file_content)
     assert row["sha256_hash"] == expected_hash
-    assert row["is_encrypted"] == 0
+    assert row["is_encrypted"] == 1
 
 
 def test_uploads_with_same_name_do_not_overwrite(client):
-
-    test_client, _, storage_path = client
-
+    test_client, _, storage_path, _ = client
     register_and_login(test_client)
 
     first_response = test_client.post(
         "/files/upload",
         data={
-            "file": (
-                io.BytesIO(b"first"),
-                "notes.txt"
-            )
+            "file": (io.BytesIO(b"first"), "notes.txt")
         },
         content_type="multipart/form-data",
     )
@@ -188,10 +178,7 @@ def test_uploads_with_same_name_do_not_overwrite(client):
     second_response = test_client.post(
         "/files/upload",
         data={
-            "file": (
-                io.BytesIO(b"second"),
-                "notes.txt"
-            )
+            "file": (io.BytesIO(b"second"), "notes.txt")
         },
         content_type="multipart/form-data",
     )
