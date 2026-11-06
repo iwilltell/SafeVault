@@ -18,16 +18,20 @@ from flask import (
 from werkzeug.utils import secure_filename
 
 from app.database.db import execute_query, fetch_one, fetch_all
+
 from app.files.encryption import (
     encrypt_file,
     decrypt_file,
     EncryptionError,
 )
+
 from app.files.permissions import (
     get_file_permission,
     can_write_file,
     is_file_owner,
 )
+
+from app.services.audit_logger import record_event
 
 
 files_bp = Blueprint("files", __name__, url_prefix="/files")
@@ -124,6 +128,10 @@ def read_original_content(file_record):
     return original_content
 
 
+# --------------------------------------------------
+# FILE UPLOAD
+# --------------------------------------------------
+
 @files_bp.post("/upload")
 def upload_file():
 
@@ -210,6 +218,13 @@ def upload_file():
             (stored_name,),
         )
 
+        # Record successful upload.
+        record_event(
+            user_id,
+            "FILE_UPLOADED",
+            f"Uploaded file: {original_name}, File ID: {saved_file['id']}"
+        )
+
         return jsonify({
             "message": "File uploaded and encrypted successfully",
             "file_id": saved_file["id"],
@@ -228,6 +243,10 @@ def upload_file():
 
         return jsonify({"error": "File upload failed"}), 500
 
+
+# --------------------------------------------------
+# LIST FILES
+# --------------------------------------------------
 
 @files_bp.get("")
 def list_files():
@@ -269,27 +288,22 @@ def list_files():
     }), 200
 
 
-# FEATURE 5: FILE METADATA
+# --------------------------------------------------
+# FILE METADATA
+# --------------------------------------------------
 
 @files_bp.get("/<int:file_id>/metadata")
 def get_file_metadata(file_id):
-    """
-    Return file metadata to the owner or a user with shared access.
-    """
 
     user_id = get_current_user_id()
 
     if not user_id:
-        return jsonify({
-            "error": "Authentication required"
-        }), 401
+        return jsonify({"error": "Authentication required"}), 401
 
     file_record = get_file_access(file_id, user_id)
 
     if file_record is None:
-        return jsonify({
-            "error": "File not found"
-        }), 404
+        return jsonify({"error": "File not found"}), 404
 
     permission = get_file_permission(file_id, user_id)
 
@@ -306,6 +320,10 @@ def get_file_metadata(file_id):
     }), 200
 
 
+# --------------------------------------------------
+# FILE DOWNLOAD
+# --------------------------------------------------
+
 @files_bp.get("/<int:file_id>/download")
 def download_file(file_id):
 
@@ -321,6 +339,13 @@ def download_file(file_id):
 
     try:
         original_content = read_original_content(file_record)
+
+        # Record successful download.
+        record_event(
+            user_id,
+            "FILE_DOWNLOADED",
+            f"Downloaded file ID: {file_id}"
+        )
 
         return send_file(
             BytesIO(original_content),
@@ -352,6 +377,10 @@ def download_file(file_id):
         return jsonify({"error": "Unable to read stored file"}), 500
 
 
+# --------------------------------------------------
+# SHARE FILE
+# --------------------------------------------------
+
 @files_bp.post("/<int:file_id>/share")
 def share_file(file_id):
 
@@ -361,7 +390,9 @@ def share_file(file_id):
         return jsonify({"error": "Authentication required"}), 401
 
     if not is_file_owner(file_id, user_id):
-        return jsonify({"error": "Only the file owner can share it"}), 403
+        return jsonify({
+            "error": "Only the file owner can share it"
+        }), 403
 
     data = request.get_json(silent=True) or {}
 
@@ -374,7 +405,9 @@ def share_file(file_id):
     target_username = target_username.strip()
 
     if permission not in ("read", "write"):
-        return jsonify({"error": "Permission must be read or write"}), 400
+        return jsonify({
+            "error": "Permission must be read or write"
+        }), 400
 
     target_user = fetch_one(
         "SELECT id FROM users WHERE username = ?",
@@ -434,6 +467,13 @@ def share_file(file_id):
             )
             message = "File shared successfully"
 
+        # Record successful sharing.
+        record_event(
+            user_id,
+            "FILE_SHARED",
+            f"Shared file ID {file_id} with user {target_user_id} using {permission} permission"
+        )
+
         return jsonify({
             "message": message,
             "file_id": file_id,
@@ -446,6 +486,10 @@ def share_file(file_id):
         return jsonify({"error": "Unable to share file"}), 500
 
 
+# --------------------------------------------------
+# LIST SHARES
+# --------------------------------------------------
+
 @files_bp.get("/<int:file_id>/shares")
 def list_shares(file_id):
 
@@ -455,7 +499,9 @@ def list_shares(file_id):
         return jsonify({"error": "Authentication required"}), 401
 
     if not is_file_owner(file_id, user_id):
-        return jsonify({"error": "Only the file owner can view shares"}), 403
+        return jsonify({
+            "error": "Only the file owner can view shares"
+        }), 403
 
     shares = fetch_all(
         """
@@ -480,6 +526,10 @@ def list_shares(file_id):
     }), 200
 
 
+# --------------------------------------------------
+# UPDATE SHARING PERMISSION
+# --------------------------------------------------
+
 @files_bp.put("/<int:file_id>/share/<int:target_user_id>")
 def update_share_permission(file_id, target_user_id):
 
@@ -489,13 +539,17 @@ def update_share_permission(file_id, target_user_id):
         return jsonify({"error": "Authentication required"}), 401
 
     if not is_file_owner(file_id, user_id):
-        return jsonify({"error": "Only the file owner can change permissions"}), 403
+        return jsonify({
+            "error": "Only the file owner can change permissions"
+        }), 403
 
     data = request.get_json(silent=True) or {}
     permission = data.get("permission")
 
     if permission not in ("read", "write"):
-        return jsonify({"error": "Permission must be read or write"}), 400
+        return jsonify({
+            "error": "Permission must be read or write"
+        }), 400
 
     existing_share = fetch_one(
         """
@@ -523,6 +577,13 @@ def update_share_permission(file_id, target_user_id):
         ),
     )
 
+    # Record permission change.
+    record_event(
+        user_id,
+        "PERMISSION_UPDATED",
+        f"Updated file ID {file_id} permission for user {target_user_id} to {permission}"
+    )
+
     return jsonify({
         "message": "Sharing permission updated",
         "file_id": file_id,
@@ -530,6 +591,10 @@ def update_share_permission(file_id, target_user_id):
         "permission": permission,
     }), 200
 
+
+# --------------------------------------------------
+# REVOKE FILE ACCESS
+# --------------------------------------------------
 
 @files_bp.delete("/<int:file_id>/share/<int:target_user_id>")
 def revoke_share(file_id, target_user_id):
@@ -540,7 +605,9 @@ def revoke_share(file_id, target_user_id):
         return jsonify({"error": "Authentication required"}), 401
 
     if not is_file_owner(file_id, user_id):
-        return jsonify({"error": "Only the file owner can revoke access"}), 403
+        return jsonify({
+            "error": "Only the file owner can revoke access"
+        }), 403
 
     existing_share = fetch_one(
         """
@@ -562,12 +629,23 @@ def revoke_share(file_id, target_user_id):
         (file_id, target_user_id),
     )
 
+    # Record access revocation.
+    record_event(
+        user_id,
+        "ACCESS_REVOKED",
+        f"Revoked access to file ID {file_id} from user {target_user_id}"
+    )
+
     return jsonify({
         "message": "File access revoked successfully",
         "file_id": file_id,
         "user_id": target_user_id,
     }), 200
 
+
+# --------------------------------------------------
+# EDIT FILE
+# --------------------------------------------------
 
 @files_bp.put("/<int:file_id>/edit")
 def edit_file(file_id):
@@ -607,7 +685,6 @@ def edit_file(file_id):
         return jsonify({"error": "File is too large"}), 413
 
     try:
-        # Validate the existing file before replacing it.
         old_content = read_original_content(file_record)
 
         if file_record["is_encrypted"]:
@@ -620,7 +697,6 @@ def edit_file(file_id):
         if file_path is None:
             return jsonify({"error": "Invalid stored file"}), 500
 
-        # Replace the file on disk.
         file_path.write_bytes(new_stored_content)
 
         new_hash = hashlib.sha256(new_content).hexdigest()
@@ -638,13 +714,20 @@ def edit_file(file_id):
             )
 
         except Exception:
-            # Restore original contents if the metadata update fails.
+            # Restore original contents if metadata update fails.
             if file_record["is_encrypted"]:
                 file_path.write_bytes(encrypt_file(old_content))
             else:
                 file_path.write_bytes(old_content)
 
             raise
+
+        # Record successful edit.
+        record_event(
+            user_id,
+            "FILE_EDITED",
+            f"Edited file ID: {file_id}"
+        )
 
         return jsonify({
             "message": "File updated successfully",
@@ -654,8 +737,12 @@ def edit_file(file_id):
         }), 200
 
     except EncryptionError:
-        current_app.logger.exception("File encryption/decryption failed")
-        return jsonify({"error": "Unable to process file encryption"}), 500
+        current_app.logger.exception(
+            "File encryption/decryption failed"
+        )
+        return jsonify({
+            "error": "Unable to process file encryption"
+        }), 500
 
     except ValueError:
         return jsonify({
@@ -663,8 +750,12 @@ def edit_file(file_id):
         }), 409
 
     except FileNotFoundError:
-        return jsonify({"error": "Stored file is missing"}), 404
+        return jsonify({
+            "error": "Stored file is missing"
+        }), 404
 
     except OSError:
         current_app.logger.exception("File editing failed")
-        return jsonify({"error": "Unable to update file"}), 500
+        return jsonify({
+            "error": "Unable to update file"
+        }), 500
