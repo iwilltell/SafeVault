@@ -10,8 +10,11 @@ def create_app():
 
     app.config.from_object(Config)
 
-    # Initialize the database when the application starts.
     initialize_database()
+
+    from app.auth.authentication import auth_bp
+
+    app.register_blueprint(auth_bp)
 
     @app.get("/")
     def index():
