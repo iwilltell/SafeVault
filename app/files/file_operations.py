@@ -33,6 +33,10 @@ from app.files.permissions import (
 
 from app.services.audit_logger import record_event
 
+from app.security.input_validator import validate_filename
+from app.security.threat_detector import scan_file_content
+from app.security.audit_logger import log_security_event
+
 
 files_bp = Blueprint("files", __name__, url_prefix="/files")
 
@@ -54,9 +58,7 @@ def get_current_user_id():
 
 
 def get_file_access(file_id, user_id):
-    """
-    Return a file if the user owns it or has shared access.
-    """
+    """Return a file if the user owns it or has shared access."""
 
     return fetch_one(
         """
@@ -79,9 +81,7 @@ def get_file_access(file_id, user_id):
 
 
 def get_storage_file(stored_name):
-    """
-    Resolve a stored filename inside the configured storage directory.
-    """
+    """Resolve a stored filename inside the configured storage directory."""
 
     storage_path = Path(
         current_app.config["STORAGE_PATH"]
@@ -99,9 +99,7 @@ def get_storage_file(stored_name):
 
 
 def read_original_content(file_record):
-    """
-    Read and decrypt a stored file, then verify its integrity.
-    """
+    """Read and decrypt a stored file, then verify its integrity."""
 
     file_path = get_storage_file(file_record["stored_name"])
 
@@ -129,7 +127,7 @@ def read_original_content(file_record):
 
 
 # --------------------------------------------------
-# FILE UPLOAD
+# FILE UPLOAD WITH THREAT DETECTION
 # --------------------------------------------------
 
 @files_bp.post("/upload")
@@ -150,35 +148,77 @@ def upload_file():
 
     original_name = secure_filename(uploaded_file.filename)
 
-    if not original_name:
-        return jsonify({"error": "Invalid filename"}), 400
+    if not original_name or not validate_filename(original_name):
+        return jsonify({
+            "error": "Invalid or unsupported filename"
+        }), 400
 
     extension = Path(original_name).suffix.lower()
 
     if extension not in ALLOWED_EXTENSIONS:
-        return jsonify({"error": "File type not allowed"}), 400
+        return jsonify({
+            "error": "File type not allowed"
+        }), 400
 
     max_size = current_app.config["MAX_CONTENT_LENGTH"]
+
     file_content = uploaded_file.stream.read(max_size + 1)
 
     if not file_content:
-        return jsonify({"error": "Empty files are not allowed"}), 400
+        return jsonify({
+            "error": "Empty files are not allowed"
+        }), 400
 
     if len(file_content) > max_size:
-        return jsonify({"error": "File is too large"}), 413
+        return jsonify({
+            "error": "File is too large"
+        }), 413
 
-    sha256_hash = hashlib.sha256(file_content).hexdigest()
+    # Scan file contents before encryption or permanent storage.
+    detected_threats = scan_file_content(
+        original_name,
+        file_content,
+    )
+
+    if detected_threats:
+
+        for threat in detected_threats:
+            log_security_event(
+                user_id,
+                threat,
+                original_name,
+            )
+
+        return jsonify({
+            "error": "Upload rejected: suspicious file detected",
+            "threats": detected_threats,
+        }), 400
+
+    sha256_hash = hashlib.sha256(
+        file_content
+    ).hexdigest()
 
     try:
         encrypted_content = encrypt_file(file_content)
+
     except EncryptionError:
-        current_app.logger.exception("File encryption failed")
-        return jsonify({"error": "File encryption failed"}), 500
+        current_app.logger.exception(
+            "File encryption failed"
+        )
+        return jsonify({
+            "error": "File encryption failed"
+        }), 500
 
     stored_name = f"{uuid.uuid4().hex}{extension}"
 
-    storage_path = Path(current_app.config["STORAGE_PATH"])
-    storage_path.mkdir(parents=True, exist_ok=True)
+    storage_path = Path(
+        current_app.config["STORAGE_PATH"]
+    )
+
+    storage_path.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
 
     destination = storage_path / stored_name
 
@@ -218,11 +258,10 @@ def upload_file():
             (stored_name,),
         )
 
-        # Record successful upload.
         record_event(
             user_id,
             "FILE_UPLOADED",
-            f"Uploaded file: {original_name}, File ID: {saved_file['id']}"
+            f"Uploaded file: {original_name}, File ID: {saved_file['id']}",
         )
 
         return jsonify({
@@ -239,9 +278,14 @@ def upload_file():
 
     except Exception:
         destination.unlink(missing_ok=True)
-        current_app.logger.exception("Encrypted file upload failed")
 
-        return jsonify({"error": "File upload failed"}), 500
+        current_app.logger.exception(
+            "Encrypted file upload failed"
+        )
+
+        return jsonify({
+            "error": "File upload failed"
+        }), 500
 
 
 # --------------------------------------------------
@@ -340,11 +384,10 @@ def download_file(file_id):
     try:
         original_content = read_original_content(file_record)
 
-        # Record successful download.
         record_event(
             user_id,
             "FILE_DOWNLOADED",
-            f"Downloaded file ID: {file_id}"
+            f"Downloaded file ID: {file_id}",
         )
 
         return send_file(
@@ -359,7 +402,9 @@ def download_file(file_id):
             "File decryption failed for file ID %s",
             file_id,
         )
-        return jsonify({"error": "Unable to decrypt file"}), 500
+        return jsonify({
+            "error": "Unable to decrypt file"
+        }), 500
 
     except ValueError:
         return jsonify({
@@ -367,14 +412,18 @@ def download_file(file_id):
         }), 409
 
     except FileNotFoundError:
-        return jsonify({"error": "Stored file is missing"}), 404
+        return jsonify({
+            "error": "Stored file is missing"
+        }), 404
 
     except OSError:
         current_app.logger.exception(
             "File read failed for file ID %s",
             file_id,
         )
-        return jsonify({"error": "Unable to read stored file"}), 500
+        return jsonify({
+            "error": "Unable to read stored file"
+        }), 500
 
 
 # --------------------------------------------------
@@ -400,7 +449,9 @@ def share_file(file_id):
     permission = data.get("permission")
 
     if not isinstance(target_username, str) or not target_username.strip():
-        return jsonify({"error": "A target username is required"}), 400
+        return jsonify({
+            "error": "A target username is required"
+        }), 400
 
     target_username = target_username.strip()
 
@@ -415,12 +466,16 @@ def share_file(file_id):
     )
 
     if target_user is None:
-        return jsonify({"error": "Target user not found"}), 404
+        return jsonify({
+            "error": "Target user not found"
+        }), 404
 
     target_user_id = target_user["id"]
 
     if target_user_id == user_id:
-        return jsonify({"error": "You already own this file"}), 400
+        return jsonify({
+            "error": "You already own this file"
+        }), 400
 
     try:
         existing_share = fetch_one(
@@ -447,6 +502,7 @@ def share_file(file_id):
                 ),
             )
             message = "Existing sharing permission updated"
+
         else:
             execute_query(
                 """
@@ -467,11 +523,10 @@ def share_file(file_id):
             )
             message = "File shared successfully"
 
-        # Record successful sharing.
         record_event(
             user_id,
             "FILE_SHARED",
-            f"Shared file ID {file_id} with user {target_user_id} using {permission} permission"
+            f"Shared file ID {file_id} with user {target_user_id} using {permission} permission",
         )
 
         return jsonify({
@@ -483,7 +538,9 @@ def share_file(file_id):
 
     except Exception:
         current_app.logger.exception("File sharing failed")
-        return jsonify({"error": "Unable to share file"}), 500
+        return jsonify({
+            "error": "Unable to share file"
+        }), 500
 
 
 # --------------------------------------------------
@@ -561,7 +618,9 @@ def update_share_permission(file_id, target_user_id):
     )
 
     if existing_share is None:
-        return jsonify({"error": "Share not found"}), 404
+        return jsonify({
+            "error": "Share not found"
+        }), 404
 
     execute_query(
         """
@@ -577,11 +636,10 @@ def update_share_permission(file_id, target_user_id):
         ),
     )
 
-    # Record permission change.
     record_event(
         user_id,
         "PERMISSION_UPDATED",
-        f"Updated file ID {file_id} permission for user {target_user_id} to {permission}"
+        f"Updated file ID {file_id} permission for user {target_user_id} to {permission}",
     )
 
     return jsonify({
@@ -619,7 +677,9 @@ def revoke_share(file_id, target_user_id):
     )
 
     if existing_share is None:
-        return jsonify({"error": "Share not found"}), 404
+        return jsonify({
+            "error": "Share not found"
+        }), 404
 
     execute_query(
         """
@@ -629,11 +689,10 @@ def revoke_share(file_id, target_user_id):
         (file_id, target_user_id),
     )
 
-    # Record access revocation.
     record_event(
         user_id,
         "ACCESS_REVOKED",
-        f"Revoked access to file ID {file_id} from user {target_user_id}"
+        f"Revoked access to file ID {file_id} from user {target_user_id}",
     )
 
     return jsonify({
@@ -656,7 +715,9 @@ def edit_file(file_id):
         return jsonify({"error": "Authentication required"}), 401
 
     if not can_write_file(file_id, user_id):
-        return jsonify({"error": "Write permission required"}), 403
+        return jsonify({
+            "error": "Write permission required"
+        }), 403
 
     file_record = fetch_one(
         "SELECT * FROM files WHERE id = ?",
@@ -664,25 +725,35 @@ def edit_file(file_id):
     )
 
     if file_record is None:
-        return jsonify({"error": "File not found"}), 404
+        return jsonify({
+            "error": "File not found"
+        }), 404
 
     uploaded_file = request.files.get("file")
 
     if uploaded_file is None:
-        return jsonify({"error": "No replacement file provided"}), 400
+        return jsonify({
+            "error": "No replacement file provided"
+        }), 400
 
     if not uploaded_file.filename:
-        return jsonify({"error": "Filename is required"}), 400
+        return jsonify({
+            "error": "Filename is required"
+        }), 400
 
     new_content = uploaded_file.stream.read(
         current_app.config["MAX_CONTENT_LENGTH"] + 1
     )
 
     if not new_content:
-        return jsonify({"error": "Empty files are not allowed"}), 400
+        return jsonify({
+            "error": "Empty files are not allowed"
+        }), 400
 
     if len(new_content) > current_app.config["MAX_CONTENT_LENGTH"]:
-        return jsonify({"error": "File is too large"}), 413
+        return jsonify({
+            "error": "File is too large"
+        }), 413
 
     try:
         old_content = read_original_content(file_record)
@@ -695,11 +766,15 @@ def edit_file(file_id):
         file_path = get_storage_file(file_record["stored_name"])
 
         if file_path is None:
-            return jsonify({"error": "Invalid stored file"}), 500
+            return jsonify({
+                "error": "Invalid stored file"
+            }), 500
 
         file_path.write_bytes(new_stored_content)
 
-        new_hash = hashlib.sha256(new_content).hexdigest()
+        new_hash = hashlib.sha256(
+            new_content
+        ).hexdigest()
 
         try:
             execute_query(
@@ -714,7 +789,6 @@ def edit_file(file_id):
             )
 
         except Exception:
-            # Restore original contents if metadata update fails.
             if file_record["is_encrypted"]:
                 file_path.write_bytes(encrypt_file(old_content))
             else:
@@ -722,11 +796,10 @@ def edit_file(file_id):
 
             raise
 
-        # Record successful edit.
         record_event(
             user_id,
             "FILE_EDITED",
-            f"Edited file ID: {file_id}"
+            f"Edited file ID: {file_id}",
         )
 
         return jsonify({
