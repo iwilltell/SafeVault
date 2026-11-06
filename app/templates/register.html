@@ -1,0 +1,109 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SafeVault | Create Account</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/register.css') }}">
+</head>
+<body>
+
+<div class="register-container">
+
+    <div class="register-brand">
+        <div class="brand-icon">S</div>
+        <span>SafeVault</span>
+    </div>
+
+    <div class="register-card">
+
+        <div class="register-icon">🔐</div>
+
+        <p class="eyebrow">CREATE YOUR ACCOUNT</p>
+        <h1>Join SafeVault</h1>
+        <p class="subtitle">
+            Create your private space to securely manage your files.
+        </p>
+
+        <div id="registerMessage" class="message"></div>
+
+        <form id="registerForm">
+
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input
+                    type="text"
+                    id="username"
+                    name="username"
+                    placeholder="Choose a username"
+                    minlength="3"
+                    maxlength="50"
+                    required
+                    autocomplete="username"
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email address</label>
+                <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    placeholder="Enter your email"
+                    required
+                    autocomplete="email"
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    placeholder="Create a password"
+                    minlength="8"
+                    required
+                    autocomplete="new-password"
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="confirmPassword">Confirm password</label>
+                <input
+                    type="password"
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    placeholder="Enter password again"
+                    minlength="8"
+                    required
+                    autocomplete="new-password"
+                >
+            </div>
+
+            <button type="submit" id="registerButton">
+                Create Account →
+            </button>
+
+        </form>
+
+        <p class="login-link">
+            Already have an account?
+            <a href="/">Sign in</a>
+        </p>
+
+    </div>
+
+    <p class="footer-text">
+        © 2026 SafeVault · Secure File Management
+    </p>
+
+</div>
+
+<script src="{{ url_for('static', filename='js/register.js') }}"></script>
+
+</body>
+</html>

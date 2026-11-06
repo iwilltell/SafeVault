@@ -1,0 +1,212 @@
+
+.activity-welcome {
+    padding: 32px;
+    margin-bottom: 22px;
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 19px;
+    background:
+        radial-gradient(circle at 90% 20%, rgba(110,83,255,.3), transparent 40%),
+        rgba(20,25,48,.78);
+}
+
+.activity-welcome h2 {
+    margin: 13px 0;
+    font-size: 27px;
+}
+
+.activity-welcome p:last-child {
+    color: #9299b5;
+    font-size: 13px;
+}
+
+.activity-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.activity-stat {
+    padding: 22px;
+    background: rgba(20,25,48,.78);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 15px;
+}
+
+.activity-stat span {
+    display: block;
+    color: #9299b5;
+    font-size: 12px;
+    margin-bottom: 12px;
+}
+
+.activity-stat strong {
+    font-size: 25px;
+}
+
+.activity-panel {
+    padding: 25px;
+    background: rgba(20,25,48,.78);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 18px;
+}
+
+.activity-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 22px;
+}
+
+.activity-heading h2 {
+    font-size: 18px;
+}
+
+.activity-heading p {
+    color: #9299b5;
+    font-size: 12px;
+    margin-top: 7px;
+}
+
+.refresh-button,
+.pagination button {
+    padding: 10px 15px;
+    color: #b5a5ff;
+    background: rgba(139,114,255,.1);
+    border: 1px solid rgba(139,114,255,.2);
+    border-radius: 9px;
+    cursor: pointer;
+}
+
+.activity-filters {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.activity-filters input,
+.activity-filters select {
+    padding: 12px;
+    border-radius: 9px;
+    border: 1px solid rgba(255,255,255,.1);
+    outline: none;
+    background: rgba(255,255,255,.04);
+    color: white;
+    font-family: inherit;
+    font-size: 12px;
+}
+
+.activity-filters input {
+    flex: 1;
+}
+
+.activity-filters select option {
+    color: black;
+}
+
+.activity-table-container {
+    overflow-x: auto;
+}
+
+.activity-panel table {
+    width: 100%;
+    min-width: 650px;
+    border-collapse: collapse;
+}
+
+.activity-panel th {
+    text-align: left;
+    padding: 14px 12px;
+    color: #858da9;
+    font-size: 10px;
+    letter-spacing: .8px;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+}
+
+.activity-panel td {
+    padding: 16px 12px;
+    font-size: 12px;
+    color: #c8cce0;
+    border-bottom: 1px solid rgba(255,255,255,.055);
+}
+
+.event-tag {
+    display: inline-block;
+    padding: 6px 9px;
+    border-radius: 7px;
+    background: rgba(139,114,255,.13);
+    color: #b5a5ff;
+    font-size: 10px;
+    font-weight: 600;
+}
+
+.event-tag.security {
+    color: #ffaaaa;
+    background: rgba(255,75,75,.12);
+}
+
+.event-tag.file {
+    color: #83a7ff;
+    background: rgba(83,125,255,.12);
+}
+
+.event-tag.login {
+    color: #65dda7;
+    background: rgba(65,205,145,.12);
+}
+
+.empty-state {
+    padding: 35px;
+    text-align: center;
+    color: #9299b5;
+}
+
+.activity-message {
+    display: none;
+    padding: 12px;
+    margin-bottom: 15px;
+    border-radius: 9px;
+    font-size: 12px;
+    background: rgba(255,75,75,.1);
+    color: #ffaaaa;
+}
+
+.activity-message.show {
+    display: block;
+}
+
+.pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    margin-top: 22px;
+}
+
+.pagination span {
+    color: #9299b5;
+    font-size: 12px;
+}
+
+.pagination button:disabled {
+    opacity: .35;
+    cursor: not-allowed;
+}
+
+@media(max-width:750px) {
+    .activity-stats {
+        grid-template-columns: 1fr;
+    }
+
+    .activity-panel {
+        padding: 17px;
+    }
+
+    .activity-filters {
+        flex-direction: column;
+    }
+
+    .activity-welcome {
+        padding: 23px;
+    }
+}

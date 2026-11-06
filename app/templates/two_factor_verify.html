@@ -1,0 +1,52 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SafeVault | Verify Login</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/two_factor.css') }}">
+</head>
+<body>
+<div class="auth-container">
+    <a class="back-link" href="/">← Back to login</a>
+
+    <div class="auth-card verify-card">
+        <div class="security-icon">🔐</div>
+        <p class="eyebrow">LOGIN VERIFICATION</p>
+        <h1>Verify it's you</h1>
+        <p class="subtitle">
+            Enter the six-digit code from your authenticator app
+            to complete your login.
+        </p>
+
+        <form id="loginOtpForm">
+            <label for="loginOtp">Authentication code</label>
+            <input
+                id="loginOtp"
+                type="text"
+                inputmode="numeric"
+                pattern="[0-9]{6}"
+                maxlength="6"
+                placeholder="000000"
+                autocomplete="one-time-code"
+                required
+                autofocus
+            >
+
+            <button type="submit" id="verifyButton">
+                Verify and continue →
+            </button>
+        </form>
+
+        <div id="verifyMessage" class="message" role="status"></div>
+
+        <p class="helper">
+            Open your authenticator app to get the current code.
+        </p>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/two_factor_verify.js') }}"></script>
+</body>
+</html>

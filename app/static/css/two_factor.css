@@ -1,0 +1,233 @@
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    min-height: 100vh;
+    padding: 25px 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: Arial, sans-serif;
+    color: #fff;
+    background:
+        radial-gradient(circle at 15% 15%, rgba(105,75,210,.22), transparent 35%),
+        radial-gradient(circle at 85% 85%, rgba(64,95,190,.16), transparent 35%),
+        #0c1020;
+}
+
+.auth-container {
+    width: 100%;
+    max-width: 490px;
+}
+
+.back-link {
+    display: inline-block;
+    margin-bottom: 18px;
+    color: #aa96ff;
+    text-decoration: none;
+    font-size: 13px;
+}
+
+.auth-card {
+    padding: 35px;
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 20px;
+    background: rgba(24,29,54,.82);
+    box-shadow: 0 20px 60px rgba(0,0,0,.3);
+    backdrop-filter: blur(18px);
+}
+
+.security-icon {
+    width: 55px;
+    height: 55px;
+    display: grid;
+    place-items: center;
+    margin-bottom: 20px;
+    border-radius: 15px;
+    background: rgba(139,114,255,.13);
+    font-size: 25px;
+}
+
+.eyebrow {
+    margin-bottom: 10px;
+    color: #a995ff;
+    font-size: 10px;
+    font-weight: bold;
+    letter-spacing: 1.5px;
+}
+
+h1 {
+    margin-bottom: 10px;
+    font-size: 26px;
+}
+
+h2 {
+    margin: 24px 0 10px;
+    font-size: 17px;
+}
+
+.subtitle,
+.helper {
+    color: #969db8;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.subtitle {
+    margin-bottom: 22px;
+}
+
+.helper {
+    margin: 12px 0;
+}
+
+.status-box,
+.enabled-message {
+    padding: 13px;
+    margin: 18px 0;
+    border-radius: 9px;
+    background: rgba(139,114,255,.1);
+    color: #c5b9ff;
+    font-size: 12px;
+}
+
+.enabled-message {
+    background: rgba(65,205,145,.1);
+    color: #78e3ae;
+}
+
+.enabled-message span {
+    margin-right: 8px;
+    font-weight: bold;
+}
+
+.qr-wrapper {
+    width: 210px;
+    height: 210px;
+    display: grid;
+    place-items: center;
+    margin: 20px auto;
+    padding: 10px;
+    border-radius: 12px;
+    background: white;
+}
+
+.qr-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.secret-box {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 12px;
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 9px;
+    background: rgba(255,255,255,.04);
+}
+
+.secret-box code {
+    overflow-wrap: anywhere;
+    color: #c5b9ff;
+    font-size: 12px;
+}
+
+.secret-box button {
+    flex-shrink: 0;
+    padding: 7px 10px;
+    border: 0;
+    border-radius: 6px;
+    background: rgba(139,114,255,.2);
+    color: white;
+    cursor: pointer;
+}
+
+form {
+    margin-top: 22px;
+}
+
+label {
+    display: block;
+    margin: 15px 0 8px;
+    color: #d4d7e7;
+    font-size: 12px;
+}
+
+input {
+    width: 100%;
+    padding: 14px;
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 9px;
+    outline: none;
+    background: rgba(255,255,255,.045);
+    color: white;
+    font-size: 16px;
+    letter-spacing: 3px;
+}
+
+input:focus {
+    border-color: #927aff;
+    box-shadow: 0 0 0 3px rgba(146,122,255,.12);
+}
+
+button[type="submit"],
+#startSetup {
+    width: 100%;
+    padding: 14px;
+    margin-top: 17px;
+    border: 0;
+    border-radius: 9px;
+    background: linear-gradient(135deg,#9276ff,#684bd5);
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+button:disabled {
+    opacity: .6;
+    cursor: not-allowed;
+}
+
+.danger-button {
+    background: linear-gradient(135deg,#d95d72,#a83b55) !important;
+}
+
+.message {
+    display: none;
+    margin-top: 18px;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.message.show {
+    display: block;
+}
+
+.message.error {
+    background: rgba(255,70,70,.12);
+    color: #ffaaaa;
+}
+
+.message.success {
+    background: rgba(65,205,145,.12);
+    color: #78e3ae;
+}
+
+[hidden] {
+    display: none !important;
+}
+
+@media(max-width:480px) {
+    .auth-card {
+        padding: 25px 20px;
+    }
+}

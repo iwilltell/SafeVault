@@ -1,0 +1,91 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SafeVault | Secure Login</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+
+    <div class="background-glow glow-one"></div>
+    <div class="background-glow glow-two"></div>
+
+    <main class="login-container">
+
+        <section class="brand-section">
+            <div class="brand-icon">S</div>
+
+            <h1>SafeVault</h1>
+
+            <p class="brand-subtitle">
+                Your files. Your privacy. Your control.
+            </p>
+        </section>
+
+        <section class="login-card">
+
+            <div class="card-heading">
+                <span class="eyebrow">WELCOME BACK</span>
+                <h2>Sign in</h2>
+                <p>Access your secure digital workspace.</p>
+            </div>
+
+            <form id="loginForm">
+
+                <div class="input-group">
+                    <label for="username">Username</label>
+
+                    <input
+                        type="text"
+                        id="username"
+                        name="username"
+                        placeholder="Enter your username"
+                        autocomplete="username"
+                        required
+                    >
+                </div>
+
+                <div class="input-group">
+                    <label for="password">Password</label>
+
+                    <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        placeholder="Enter your password"
+                        autocomplete="current-password"
+                        required
+                    >
+                </div>
+
+                <div id="message" class="message" role="alert"></div>
+
+                <button type="submit" id="loginButton">
+                    <span>Sign in securely</span>
+                    <span class="button-arrow">→</span>
+                </button>
+
+            </form>
+
+            <div class="security-note">
+                <span class="security-dot"></span>
+                Protected by SafeVault security
+            </div>
+
+        </section>
+
+        <footer>
+            © 2026 SafeVault. Secure file management.
+        </footer>
+
+    </main>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+
+</body>
+</html>

@@ -1,0 +1,357 @@
+
+.file-welcome {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 32px;
+    margin-bottom: 22px;
+    border-radius: 20px;
+    border: 1px solid rgba(255,255,255,.08);
+    background:
+        radial-gradient(circle at 90% 20%, rgba(110,83,255,.3), transparent 40%),
+        rgba(20,25,48,.78);
+}
+
+.file-welcome h2 {
+    font-size: 27px;
+    margin: 13px 0;
+}
+
+.file-welcome p:last-child {
+    color: #9299b5;
+    font-size: 13px;
+}
+
+.storage-symbol {
+    font-size: 65px;
+    color: #a995ff;
+    opacity: .65;
+}
+
+.file-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+.stat-card {
+    padding: 21px;
+    background: rgba(20,25,48,.78);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 15px;
+}
+
+.stat-card span {
+    display: block;
+    font-size: 12px;
+    color: #9299b5;
+    margin-bottom: 12px;
+}
+
+.stat-card strong {
+    font-size: 25px;
+}
+
+.upload-section,
+.files-section {
+    padding: 25px;
+    margin-bottom: 25px;
+    background: rgba(20,25,48,.78);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 18px;
+}
+
+.section-title,
+.files-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 22px;
+}
+
+.section-title h2,
+.files-heading h2 {
+    font-size: 17px;
+}
+
+.section-title p,
+.files-heading p {
+    color: #9299b5;
+    font-size: 12px;
+    margin-top: 7px;
+}
+
+.upload-area {
+    display: block;
+    text-align: center;
+    padding: 32px 15px;
+    border: 1px dashed rgba(139,114,255,.55);
+    border-radius: 15px;
+    background: rgba(139,114,255,.045);
+    cursor: pointer;
+    transition: .2s;
+}
+
+.upload-area:hover,
+.upload-area.drag-over {
+    background: rgba(139,114,255,.12);
+    border-color: #a995ff;
+}
+
+.upload-icon {
+    width: 45px;
+    height: 45px;
+    display: grid;
+    place-items: center;
+    margin: 0 auto 15px;
+    border-radius: 13px;
+    background: rgba(139,114,255,.2);
+    color: #b5a5ff;
+    font-size: 25px;
+}
+
+.upload-area h3 {
+    font-size: 14px;
+    margin-bottom: 8px;
+}
+
+.upload-area p {
+    color: #9299b5;
+    font-size: 12px;
+    margin-bottom: 13px;
+}
+
+.upload-area span {
+    color: #a995ff;
+    font-size: 10px;
+    letter-spacing: .5px;
+}
+
+#fileInput {
+    display: none;
+}
+
+.selected-file {
+    color: #a995ff;
+    font-size: 12px;
+    margin-top: 12px;
+}
+
+.upload-button {
+    display: block;
+    width: 100%;
+    padding: 14px;
+    margin-top: 15px;
+    border: none;
+    border-radius: 11px;
+    background: linear-gradient(110deg,#8b72ff,#537dff);
+    color: white;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.upload-button:disabled {
+    opacity: .4;
+    cursor: not-allowed;
+}
+
+.refresh-button {
+    padding: 10px 15px;
+    color: #b5a5ff;
+    background: rgba(139,114,255,.1);
+    border: 1px solid rgba(139,114,255,.2);
+    border-radius: 9px;
+    cursor: pointer;
+}
+
+.table-container {
+    width: 100%;
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 680px;
+}
+
+th {
+    text-align: left;
+    padding: 14px 12px;
+    color: #858da9;
+    font-size: 10px;
+    letter-spacing: .8px;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+}
+
+td {
+    padding: 16px 12px;
+    font-size: 12px;
+    color: #c8cce0;
+    border-bottom: 1px solid rgba(255,255,255,.055);
+}
+
+.file-name {
+    color: white;
+    font-weight: 600;
+}
+
+.file-type {
+    color: #9299b5;
+    font-size: 10px;
+    margin-top: 5px;
+}
+
+.access-tag,
+.encryption-tag {
+    display: inline-block;
+    padding: 5px 8px;
+    border-radius: 7px;
+    font-size: 10px;
+    background: rgba(139,114,255,.12);
+    color: #b5a5ff;
+}
+
+.encryption-tag {
+    background: rgba(65,205,145,.12);
+    color: #65dda7;
+}
+
+.action-group {
+    display: flex;
+    gap: 7px;
+}
+
+.action-button {
+    padding: 7px 9px;
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 7px;
+    background: rgba(255,255,255,.04);
+    color: #b5a5ff;
+    cursor: pointer;
+    font-size: 11px;
+}
+
+.action-button:hover {
+    background: rgba(139,114,255,.17);
+}
+
+.empty-state {
+    padding: 35px;
+    text-align: center;
+    color: #9299b5;
+}
+
+.status-message {
+    display: none;
+    margin-bottom: 15px;
+    padding: 12px;
+    border-radius: 9px;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.status-message.show {
+    display: block;
+}
+
+.status-message.error {
+    color: #ffaaaa;
+    background: rgba(255,75,75,.1);
+}
+
+.status-message.success {
+    color: #a8f0ca;
+    background: rgba(50,200,130,.1);
+}
+
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(0,0,0,.7);
+    backdrop-filter: blur(8px);
+}
+
+.modal-overlay.open {
+    display: flex;
+}
+
+.share-modal {
+    position: relative;
+    width: 100%;
+    max-width: 430px;
+    padding: 30px;
+    border-radius: 19px;
+    background: #151a32;
+    border: 1px solid rgba(255,255,255,.1);
+    box-shadow: 0 20px 70px rgba(0,0,0,.4);
+}
+
+.share-modal h2 {
+    margin: 13px 0;
+}
+
+.modal-description {
+    color: #9299b5;
+    font-size: 12px;
+    margin-bottom: 22px;
+    overflow-wrap: anywhere;
+}
+
+.modal-close {
+    position: absolute;
+    top: 14px;
+    right: 17px;
+    border: 0;
+    background: transparent;
+    color: white;
+    font-size: 25px;
+    cursor: pointer;
+}
+
+.share-modal label {
+    display: block;
+    margin: 16px 0 8px;
+    font-size: 12px;
+    color: #c8cce0;
+}
+
+.share-modal input,
+.share-modal select {
+    width: 100%;
+    padding: 13px;
+    color: white;
+    background: rgba(255,255,255,.05);
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 9px;
+    outline: none;
+}
+
+.share-modal select option {
+    color: #111;
+}
+
+@media(max-width:750px) {
+    .file-stats {
+        grid-template-columns: 1fr;
+    }
+
+    .file-welcome {
+        padding: 24px;
+    }
+
+    .storage-symbol {
+        display: none;
+    }
+
+    .upload-section,
+    .files-section {
+        padding: 17px;
+    }
+}

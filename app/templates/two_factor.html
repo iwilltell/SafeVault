@@ -1,0 +1,111 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SafeVault | Two-Factor Authentication</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/two_factor.css') }}">
+</head>
+<body>
+<div class="auth-container">
+    <a class="back-link" href="/dashboard">← Back to dashboard</a>
+
+    <div class="auth-card">
+        <div class="security-icon">🛡️</div>
+        <p class="eyebrow">ACCOUNT SECURITY</p>
+        <h1>Two-Factor Authentication</h1>
+        <p class="subtitle">
+            Add another layer of protection to your SafeVault account.
+        </p>
+
+        <div id="statusBox" class="status-box">
+            Checking your security settings...
+        </div>
+
+        <div id="setupSection" hidden>
+            <h2>Set up your authenticator</h2>
+            <p class="helper">
+                Scan this QR code with Google Authenticator,
+                Microsoft Authenticator or another TOTP app.
+            </p>
+
+            <div class="qr-wrapper">
+                <img id="qrCode" alt="Authenticator setup QR code">
+            </div>
+
+            <p class="helper">Or enter this secret manually:</p>
+            <div class="secret-box">
+                <code id="manualSecret"></code>
+                <button type="button" id="copySecret">Copy</button>
+            </div>
+
+            <form id="enableForm">
+                <label for="setupOtp">Enter the 6-digit code from your app</label>
+                <input
+                    id="setupOtp"
+                    type="text"
+                    inputmode="numeric"
+                    pattern="[0-9]{6}"
+                    maxlength="6"
+                    placeholder="000000"
+                    autocomplete="one-time-code"
+                    required
+                >
+                <button type="submit" id="enableButton">
+                    Verify and enable 2FA
+                </button>
+            </form>
+        </div>
+
+        <div id="disabledSection" hidden>
+            <button type="button" id="startSetup">
+                Set up 2FA →
+            </button>
+        </div>
+
+        <div id="enabledSection" hidden>
+            <div class="enabled-message">
+                <span>✓</span>
+                Two-factor authentication is active.
+            </div>
+
+            <h2>Disable 2FA</h2>
+            <p class="helper">
+                Confirm your password and current authenticator code.
+                You will be signed out after disabling 2FA.
+            </p>
+
+            <form id="disableForm">
+                <label for="disablePassword">Account password</label>
+                <input
+                    id="disablePassword"
+                    type="password"
+                    autocomplete="current-password"
+                    required
+                >
+
+                <label for="disableOtp">Authenticator code</label>
+                <input
+                    id="disableOtp"
+                    type="text"
+                    inputmode="numeric"
+                    pattern="[0-9]{6}"
+                    maxlength="6"
+                    placeholder="000000"
+                    required
+                >
+
+                <button type="submit" class="danger-button">
+                    Disable 2FA
+                </button>
+            </form>
+        </div>
+
+        <div id="message" class="message" role="status"></div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/two_factor.js') }}"></script>
+</body>
+</html>

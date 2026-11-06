@@ -1,0 +1,176 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SafeVault | My Files</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/file_manager.css') }}">
+</head>
+<body>
+
+<div class="layout">
+
+    <aside class="sidebar">
+        <div class="brand">
+            <div class="brand-icon">S</div>
+            <span>SafeVault</span>
+        </div>
+
+        <p class="nav-label">WORKSPACE</p>
+        <a class="nav-item" href="/dashboard">⌂ &nbsp; Overview</a>
+        <a class="nav-item active" href="/file-manager">▤ &nbsp; My Files</a>
+
+        <p class="nav-label">SECURITY</p>
+        <a class="nav-item" href="/audit">◈ &nbsp; Activity Logs</a>
+
+        <div class="sidebar-bottom">
+            <div class="security-status">
+                <span class="status-dot"></span>
+                System active
+            </div>
+            <button id="logoutButton" class="logout-button">↪ &nbsp; Sign out</button>
+        </div>
+    </aside>
+
+    <main class="main-content">
+
+        <header class="topbar">
+            <div>
+                <p class="eyebrow">YOUR WORKSPACE</p>
+                <h1>My Files</h1>
+            </div>
+
+            <div class="profile">
+                <div class="avatar">S</div>
+                <span id="username">User</span>
+            </div>
+        </header>
+
+        <section class="file-welcome">
+            <div>
+                <p class="eyebrow">SECURE STORAGE</p>
+                <h2>Your digital workspace.</h2>
+                <p>Upload, organize and securely access your files.</p>
+            </div>
+            <div class="storage-symbol">▤</div>
+        </section>
+
+        <section class="file-stats">
+            <div class="stat-card">
+                <span>Total files</span>
+                <strong id="totalFiles">0</strong>
+            </div>
+            <div class="stat-card">
+                <span>Storage used</span>
+                <strong id="totalStorage">0 B</strong>
+            </div>
+            <div class="stat-card">
+                <span>Encrypted files</span>
+                <strong id="encryptedFiles">0</strong>
+            </div>
+        </section>
+
+        <section class="upload-section">
+            <div class="section-title">
+                <div>
+                    <h2>Upload a file</h2>
+                    <p>Your uploaded files are scanned and encrypted by SafeVault.</p>
+                </div>
+            </div>
+
+            <label for="fileInput" class="upload-area" id="uploadArea">
+                <div class="upload-icon">↑</div>
+                <h3>Choose a file to upload</h3>
+                <p>Click here to browse your computer</p>
+                <span>TXT · PDF · PNG · JPG · CSV · DOCX · XLSX</span>
+                <input type="file" id="fileInput"
+                       accept=".txt,.pdf,.png,.jpg,.jpeg,.csv,.docx,.xlsx">
+            </label>
+
+            <div id="selectedFile" class="selected-file"></div>
+
+            <button id="uploadButton" class="upload-button" disabled>
+                Upload securely
+            </button>
+        </section>
+
+        <section class="files-section">
+
+            <div class="files-heading">
+                <div>
+                    <h2>Your files</h2>
+                    <p>Files you own and files shared with you.</p>
+                </div>
+
+                <button id="refreshButton" class="refresh-button">
+                    ↻ Refresh
+                </button>
+            </div>
+
+            <div id="statusMessage" class="status-message" role="status"></div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>FILE NAME</th>
+                            <th>SIZE</th>
+                            <th>ACCESS</th>
+                            <th>ENCRYPTION</th>
+                            <th>DATE ADDED</th>
+                            <th>ACTION</th>
+                        </tr>
+                    </thead>
+                    <tbody id="fileTableBody">
+                        <tr>
+                            <td colspan="6" class="empty-state">
+                                Loading your files...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+        </section>
+
+        <footer>© 2026 SafeVault · Secure file management</footer>
+
+    </main>
+</div>
+
+<!-- Sharing dialog -->
+<div class="modal-overlay" id="shareModal">
+    <div class="share-modal">
+        <button class="modal-close" id="closeModal">×</button>
+
+        <p class="eyebrow">FILE PERMISSIONS</p>
+        <h2>Share file</h2>
+        <p class="modal-description" id="shareFileName"></p>
+
+        <form id="shareForm">
+            <label for="shareUsername">SafeVault username</label>
+            <input type="text" id="shareUsername"
+                   placeholder="Enter recipient username" required>
+
+            <label for="sharePermission">Permission</label>
+            <select id="sharePermission">
+                <option value="read">Read only</option>
+                <option value="write">Read and write</option>
+            </select>
+
+            <button type="submit" class="upload-button">
+                Share securely
+            </button>
+        </form>
+
+        <div id="shareMessage" class="status-message"></div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+<script src="{{ url_for('static', filename='js/file_manager.js') }}"></script>
+
+</body>
+</html>

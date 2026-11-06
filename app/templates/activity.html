@@ -1,0 +1,142 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SafeVault | Activity Logs</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/activity.css') }}">
+</head>
+<body>
+
+<div class="layout">
+
+    <aside class="sidebar">
+        <div class="brand">
+            <div class="brand-icon">S</div>
+            <span>SafeVault</span>
+        </div>
+
+        <p class="nav-label">WORKSPACE</p>
+        <a class="nav-item" href="/dashboard">⌂ &nbsp; Overview</a>
+        <a class="nav-item" href="/file-manager">▤ &nbsp; My Files</a>
+
+        <p class="nav-label">SECURITY</p>
+        <a class="nav-item active" href="/activity">◈ &nbsp; Activity Logs</a>
+
+        <div class="sidebar-bottom">
+            <div class="security-status">
+                <span class="status-dot"></span>
+                System active
+            </div>
+            <button id="logoutButton" class="logout-button">↪ &nbsp; Sign out</button>
+        </div>
+    </aside>
+
+    <main class="main-content">
+
+        <header class="topbar">
+            <div>
+                <p class="eyebrow">SECURITY CENTER</p>
+                <h1>Activity Logs</h1>
+            </div>
+
+            <div class="profile">
+                <div class="avatar">S</div>
+                <span id="username">User</span>
+            </div>
+        </header>
+
+        <section class="activity-welcome">
+            <p class="eyebrow">YOUR SECURITY HISTORY</p>
+            <h2>Everything in one place.</h2>
+            <p>Monitor your account activity and file operations.</p>
+        </section>
+
+        <section class="activity-stats">
+            <div class="activity-stat">
+                <span>Total events loaded</span>
+                <strong id="totalEvents">0</strong>
+            </div>
+
+            <div class="activity-stat">
+                <span>Security alerts</span>
+                <strong id="securityEvents">0</strong>
+            </div>
+
+            <div class="activity-stat">
+                <span>Login events</span>
+                <strong id="loginEvents">0</strong>
+            </div>
+        </section>
+
+        <section class="activity-panel">
+
+            <div class="activity-heading">
+                <div>
+                    <h2>Recent activity</h2>
+                    <p>Your latest recorded account and file events.</p>
+                </div>
+
+                <button id="refreshActivity" class="refresh-button">
+                    ↻ Refresh
+                </button>
+            </div>
+
+            <div class="activity-filters">
+                <input
+                    type="text"
+                    id="searchActivity"
+                    placeholder="Search activity..."
+                >
+
+                <select id="eventFilter">
+                    <option value="all">All events</option>
+                    <option value="login">Login events</option>
+                    <option value="file">File events</option>
+                    <option value="security">Security events</option>
+                </select>
+            </div>
+
+            <div id="activityMessage" class="activity-message"></div>
+
+            <div class="activity-table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>EVENT</th>
+                            <th>DESCRIPTION</th>
+                            <th>IP ADDRESS</th>
+                            <th>DATE & TIME</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="activityTable">
+                        <tr>
+                            <td colspan="4" class="empty-state">
+                                Loading activity...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="pagination">
+                <button id="previousPage" disabled>← Previous</button>
+                <span id="pageNumber">Page 1</span>
+                <button id="nextPage">Next →</button>
+            </div>
+
+        </section>
+
+        <footer>© 2026 SafeVault · Secure file management</footer>
+
+    </main>
+</div>
+
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+<script src="{{ url_for('static', filename='js/activity.js') }}"></script>
+
+</body>
+</html>

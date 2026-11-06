@@ -33,7 +33,7 @@ loginForm.addEventListener("submit", async (event) => {
         }
 
         if (data.requires_2fa) {
-            showMessage("Two-factor authentication is required. Verification screen is coming next.", "success");
+            window.location.href = "/verify-2fa";
             return;
         }
 
